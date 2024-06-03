@@ -3,10 +3,14 @@ using Microsoft.Extensions.DependencyInjection;
 using SalesWebMVC.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+
 var connectionStr = "server=localhost;userid=admin;password=1234567;database=saleswebmvcappdb";
 builder.Services.AddDbContext<SalesWebMVCContext>(options =>
-    options.UseMySql(connectionStr, ServerVersion.AutoDetect(connectionStr))); 
-    //options.UseMySql(builder.Configuration.GetConnectionString("SalesWebMVCContext") ?? throw new InvalidOperationException("Connection string 'SalesWebMVCContext' not found.")));
+    options.UseMySql(connectionStr, ServerVersion.AutoDetect(connectionStr)));
+//options.UseMySql(builder.Configuration.GetConnectionString("SalesWebMVCContext") ?? throw new InvalidOperationException("Connection string 'SalesWebMVCContext' not found.")));
+
+builder.Services.AddScoped<SeedingService>();
+
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -19,6 +23,16 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+}
+else
+{   // <-- este bloco inteiro de else
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        var context = services.GetRequiredService<SalesWebMVCContext>();
+        var seedingService = new SeedingService(context);
+        seedingService.Seed();
+    }
 }
 
 app.UseHttpsRedirection();
